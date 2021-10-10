@@ -9,6 +9,8 @@ import {
 } from "react-native";
 import { User } from "../../types";
 import { useNavigation } from "@react-navigation/native";
+import {API, graphqlOperation, Auth} from 'aws-amplify';
+import {createChatRoom, createChatRoomUser} from '../../src/graphql/mutations'
 import styles from "./style";
 
 export type ContactListItemProps = {
@@ -25,8 +27,48 @@ export default function ContactListItem(props: ContactListItemProps) {
     image: user.imageUri,
   });
 
-  const onClick = () => {
-    // navigation to chat room
+  const onClick = async () => {
+    try {
+      const newChatRoomData = await API.graphql(graphqlOperation(createChatRoom, {input: {}}))
+
+      if(!newChatRoomData.data) {
+        return
+      }
+
+      const newChatRoom = newChatRoomData.data.createChatRoom
+
+      await API.graphql(
+        graphqlOperation(
+          createChatRoomUser, 
+          {
+            input: {
+              userID: user.id,
+              chatRoomID: newChatRoom.id
+            }
+          }
+        )
+      )
+
+      const userInfo = await Auth.currentAuthenticatedUser();
+
+      await API.graphql(
+        graphqlOperation(
+          createChatRoomUser, 
+          {
+            input: {
+              userID: userInfo.attributes.sub,
+              chatRoomID: newChatRoom.id
+            }
+          }
+        )
+      )
+      navigation.navigate("ChatRoom", {
+        id: newChatRoom.id,
+        user: "HardCoded Here" 
+      })
+    } catch (error) {
+      console.log(error)
+    }
   };
 
   return (

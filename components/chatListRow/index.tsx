@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Ionicons,
   MaterialIcons,
@@ -14,6 +14,7 @@ import {
   TouchableWithoutFeedback,
 } from "react-native";
 import moment from "moment";
+import {Auth} from 'aws-amplify';
 import { ChatRoom } from "../../types";
 import { useNavigation } from "@react-navigation/native";
 import styles from "./style";
@@ -24,26 +25,52 @@ export type ChatListItemProps = {
 
 export default function ChatListItem(props: ChatListItemProps) {
   const navigation = useNavigation();
+  const [otherUser, setOtherUser] = useState({
+    name: "",
+    imageUri: "",
+    status: ""
+  });
   const { chatRoom } = props;
-  const user = chatRoom.users[1];
+
+  useEffect(() => {
+    const getOtherUser = async () => {
+      try {
+        const userInfo = await Auth.currentAuthenticatedUser();
+        if(chatRoom.chatRoomUsers.items[0].user.id === userInfo.attributes.sub) {
+          setOtherUser(chatRoom.chatRoomUsers.items[1].user)
+        } else {
+          setOtherUser(chatRoom.chatRoomUsers.items[0].user)
+        }
+      } catch (error) {
+        console.log(error)
+      }
+    }
+    getOtherUser();
+  },[])
 
   const [modalVisible, setModalVisible] = useState(false);
   const [active] = useState({
-    name: user.name,
-    image: user.imageUri,
+    name: otherUser?.name,
+    image: otherUser?.imageUri,
   });
 
+  if(!otherUser) {
+    return null
+  }
+
   const onClick = () => {
-    navigation.navigate("ChatRoom", {
+    navigation.navigate<any>("ChatRoom", {
       id: chatRoom.id,
-      name: user.name,
-      image: user.imageUri,
+      name: otherUser.name,
+      image: otherUser.imageUri,
     });
   };
 
   const showImage = () => {
-    navigation.navigate("ShowImage", { name: user.name, image: user.imageUri });
+    navigation.navigate<any>("ShowImage", { name: otherUser.name as any, image: otherUser.imageUri as any });
   };
+
+
 
   return (
     <TouchableWithoutFeedback onPress={onClick}>
@@ -104,8 +131,8 @@ export default function ChatListItem(props: ChatListItemProps) {
         </Modal>
 
         <Pressable onPress={() => setModalVisible(true)}>
-          {user.imageUri ? (
-            <Image source={{ uri: user.imageUri }} style={styles.avatar} />
+          {otherUser.imageUri ? (
+            <Image source={{ uri: otherUser.imageUri }} style={styles.avatar} />
           ) : (
             <View style={styles.emptyImage}>
               <Ionicons name="md-person" size={50} color="white" />
@@ -114,12 +141,12 @@ export default function ChatListItem(props: ChatListItemProps) {
         </Pressable>
         <View style={styles.leftContainer}>
           <View style={styles.midContainer}>
-            <Text style={styles.username}>{user.name}</Text>
-            <Text style={styles.time}>
-              {moment(chatRoom.lastMessage.createdAt).calendar()}
-            </Text>
+            <Text style={styles.username}>{otherUser.name}</Text>
+            {/* <Text style={styles.time}>
+              {chatRoom.lastMessage.createdAt && moment(chatRoom.lastMessage.createdAt).calendar()}
+            </Text> */}
           </View>
-          <Text style={styles.lastMessage}>{chatRoom.lastMessage.content}</Text>
+          <Text style={styles.lastMessage}>{otherUser.status}</Text>
         </View>
       </View>
     </TouchableWithoutFeedback>

@@ -7,13 +7,14 @@ import moment from "moment";
 export type ChatMessageProps = {
   message: Message;
   image: String;
+  myId: String;
 };
 
 export default function ChatMessage(props: ChatMessageProps) {
-  const { message, image } = props;
+  const { message, image, myId } = props;
 
   const myMessage = () => {
-    return message.user.id === "u1";
+    return message.user.id === myId;
   };
 
   return (
@@ -28,7 +29,7 @@ export default function ChatMessage(props: ChatMessageProps) {
       >
         {!myMessage() && (
           <View style={styles.imageContainer}>
-            <Image source={{ uri: image }} style={styles.avatarCentredView} />
+            <Image source={{ uri: image as string }} style={styles.avatarCentredView} />
           </View>
         )}
         <View style={{ width: myMessage() ? "100%" : "85%" }}>
@@ -38,7 +39,7 @@ export default function ChatMessage(props: ChatMessageProps) {
             )}
           </View>
           <Text style={styles.text}>{message.content}</Text>
-          <Text style={styles.time}>{moment(message.createdAt).fromNow()}</Text>
+          <Text style={styles.time}>{moment(message.createdAt as any).fromNow()}</Text>
         </View>
       </View>
     </View>

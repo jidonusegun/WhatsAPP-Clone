@@ -49,10 +49,13 @@ export type Message = {
   user: User;
 };
 
+
+
 export type ChatRoom = {
   id: String;
   users: User[];
-  lastMessage: Message;
+  lastMessage: Message | any;
+  chatRoomUsers: any
 };
 
 export type RootTabScreenProps<Screen extends keyof RootTabParamList> =
